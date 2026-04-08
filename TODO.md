@@ -73,14 +73,14 @@ Parser and validator crate for the Deploko `deploko.toml` spec.
 **Milestone:** `v0.1.0`
 
 ### 1.1 Module Skeleton
-- [ ] Create `src/lib.rs`
-  - [ ] Declare modules: `schema`, `parser`, `validator`, `compiled`, `error`
-  - [ ] Add `#![deny(missing_docs)]`
-- [ ] Create `src/schema.rs`
-- [ ] Create `src/parser.rs`
-- [ ] Create `src/validator.rs`
-- [ ] Create `src/compiled.rs`
-- [ ] Create `src/error.rs`
+- [x] Create `src/lib.rs`
+  - [x] Declare modules: `schema`, `parser`, `validator`, `compiled`, `error`
+  - [x] Add `#![deny(missing_docs)]`
+- [x] Create `src/schema.rs`
+- [x] Create `src/parser.rs`
+- [x] Create `src/validator.rs`
+- [x] Create `src/compiled.rs`
+- [x] Create `src/error.rs`
 
 ### 1.2 Custom Scalar Types (`src/schema.rs`)
 - [ ] Implement `ByteSize` newtype wrapping `u64` (bytes)

@@ -24,7 +24,7 @@ jobs:
     - name: Get version from Cargo.toml
       id: get-version
       run: |
-        VERSION=$(cargo metadata --no-deps --format-version=1 | jq -r '.packages[] | select(.name == "deploko-spec") | .version')
+        VERSION=$(cargo metadata --no-deps --format-version=1 | jq -r '.packages[] | select(.name == "deploko-spec") | .version') || exit 1
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Cargo version: $VERSION"
     - name: Validate tag matches Cargo version
