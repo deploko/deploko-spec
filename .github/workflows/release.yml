@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  validate-tag:
+    name: Validate Tag
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+    steps:
+    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
+    - name: Install jq
+      run: sudo apt-get update && sudo apt-get install -y jq
+    - name: Get version from Cargo.toml
+      id: get-version
+      run: |
+        VERSION=$(cargo metadata --no-deps --format-version=1 | jq -r '.packages[] | select(.name == "deploko-spec") | .version')
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Cargo version: $VERSION"
+    - name: Validate tag matches Cargo version
+      run: |
+        TAG_VERSION=${GITHUB_REF#refs/tags/v}
+        if [ "$TAG_VERSION" != "${{ steps.get-version.outputs.version }}" ]; then
+          echo "Tag version $TAG_VERSION does not match Cargo version ${{ steps.get-version.outputs.version }}"
+          exit 1
+        fi
+        echo "Tag version matches Cargo version: $TAG_VERSION"
+    - name: Check CHANGELOG.md has entry
+      run: |
+        VERSION=${{ steps.get-version.outputs.version }}
+        if ! grep -q "^## \[$VERSION\]" CHANGELOG.md; then
+          echo "CHANGELOG.md does not have entry for version $VERSION"
+          exit 1
+        fi
+        echo "CHANGELOG.md has entry for version $VERSION"
+
+  publish:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    needs: validate-tag
+    environment: release
+    steps:
+    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
+    - uses: dtolnay/rust-toolchain@b7218eb8c0c0c542c8764e25580306384d9b0484  # stable
+    - name: Publish
+      run: cargo publish -p deploko-spec
+      env:
+        CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+  generate-sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    needs: validate-tag
+    steps:
+    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
+    - uses: dtolnay/rust-toolchain@b7218eb8c0c0c542c8764e25580306384d9b0484  # stable
+    - name: Install cargo-cyclonedx
+      run: cargo install cargo-cyclonedx
+    - name: Generate SBOM
+      run: cargo cyclonedx
+    - name: Upload SBOM artifact
+      uses: actions/upload-artifact@65462800fd760344b1a7ed4f2fc615188404f0ff  # v4.3.3
+      with:
+        name: sbom-${{ needs.validate-tag.outputs.version }}
+        path: bom.json
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [validate-tag, publish, generate-sbom]
+    steps:
+    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
+    - name: Download SBOM artifact
+      uses: actions/download-artifact@65a9edc526144402b9b3628a89921a844e6f515e  # v4.1.7
+      with:
+        name: sbom-${{ needs.validate-tag.outputs.version }}
+    - name: Extract changelog entry
+      id: changelog
+      run: |
+        VERSION=${{ needs.validate-tag.outputs.version }}
+        # Extract changelog entry for this version
+        awk '/^## \['"$VERSION"'\]/,/^## \[/{if (/^## \[/ && !/^## \['"$VERSION"'\]/) exit; print}' CHANGELOG.md > release_notes.md
+        echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+        cat release_notes.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+    - name: Create Release
+      uses: softprops/action-gh-release@de2c028891a7309156639712444ea816c85b5fb0  # v2.0.6
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: Release ${{ needs.validate-tag.outputs.version }}
+        body: ${{ steps.changelog.outputs.release_notes }}
+        files: |
+          bom.json
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

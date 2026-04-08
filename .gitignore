@@ -2,6 +2,8 @@
 /target/
 **/*.rs.bk
 Cargo.lock
+fuzz/corpus/
+fuzz/artifacts/
 
 # IDE
 .vscode/
@@ -10,6 +12,9 @@ Cargo.lock
 *.swp
 *.swo
 *~
+
+# Pre-commit
+.pre-commit-cache/
 
 # OS
 .DS_Store
@@ -44,3 +49,8 @@ gcov/
 # Backup files
 *.bak
 *.backup
+
+
+# Added by cargo
+
+/target

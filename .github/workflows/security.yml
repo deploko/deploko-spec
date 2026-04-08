@@ -1,0 +1,113 @@
+name: Security
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'  # Monday 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
+    - uses: dtolnay/rust-toolchain@b7218eb8c0c0c542c8764e25580306384d9b0484  # stable
+    - name: Install cargo-audit
+      run: cargo install cargo-audit
+    - name: Run cargo audit
+      id: audit
+      run: cargo audit --json > audit-report.json || true
+    - name: Parse audit results
+      id: parse
+      run: |
+        if [ -f audit-report.json ]; then
+          VULNS=$(jq -r '.vulnerabilities.list | length' audit-report.json)
+          echo "vulnerabilities=$VULNS" >> $GITHUB_OUTPUT
+          echo "Found $VULNS vulnerabilities"
+        else
+          echo "vulnerabilities=0" >> $GITHUB_OUTPUT
+        fi
+    - name: Create issue on failure
+      if: steps.parse.outputs.vulnerabilities != '0'
+      uses: actions/github-script@60a0d83039474cb78497165ba3a486f35128096c  # v7.0.1
+      with:
+        script: |
+          const fs = require('fs');
+          const auditReport = JSON.parse(fs.readFileSync('audit-report.json', 'utf8'));
+
+          const body = `## Security Audit Report
+
+          Found \`${{ steps.parse.outputs.vulnerabilities }}\` vulnerabilities:
+
+          ${auditReport.vulnerabilities.list.map(v =>
+            `### ${v.advisory.id}: ${v.advisory.title}
+            **Package:** ${v.advisory.package} (${v.advisory.version})
+            **Severity:** ${v.advisory.severity}
+            **URL:** ${v.advisory.url}
+            **Description:** ${v.advisory.description}`
+          ).join('\n\n')}
+
+          Please review and update dependencies as needed.
+          `;
+
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `Security Audit: ${{ steps.parse.outputs.vulnerabilities }} vulnerabilities found`,
+            body: body,
+            labels: ['security', 'dependencies']
+          });
+
+  deny:
+    name: Dependency Deny
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
+    - uses: dtolnay/rust-toolchain@b7218eb8c0c0c542c8764e25580306384d9b0484  # stable
+    - name: Install cargo-deny
+      run: cargo install cargo-deny
+    - name: Run cargo deny check advisories
+      id: deny
+      run: cargo deny check advisories --json > deny-report.json || true
+    - name: Parse deny results
+      id: parse-deny
+      run: |
+        if [ -f deny-report.json ]; then
+          ERRORS=$(jq -r '.errors | length' deny-report.json)
+          echo "errors=$ERRORS" >> $GITHUB_OUTPUT
+          echo "Found $ERRORS deny errors"
+        else
+          echo "errors=0" >> $GITHUB_OUTPUT
+        fi
+    - name: Create issue on failure
+      if: steps.parse-deny.outputs.errors != '0'
+      uses: actions/github-script@60a0d83039474cb78497165ba3a486f35128096c  # v7.0.1
+      with:
+        script: |
+          const fs = require('fs');
+          const denyReport = JSON.parse(fs.readFileSync('deny-report.json', 'utf8'));
+
+          const body = `## Dependency Deny Report
+
+          Found \`${{ steps.parse-deny.outputs.errors }}\` deny errors:
+
+          ${denyReport.errors.map(e =>
+            `### ${e.kind}
+            **Package:** ${e.pkg_name} (${e.pkg_version})
+            **Description:** ${e.message}`
+          ).join('\n\n')}
+
+          Please review and resolve these issues.
+          `;
+
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `Dependency Deny: ${{ steps.parse-deny.outputs.errors }} errors found`,
+            body: body,
+            labels: ['security', 'dependencies']
+          });

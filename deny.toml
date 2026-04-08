@@ -1,0 +1,55 @@
+# Cargo-deny configuration for deploko-spec
+
+# Graph configuration
+[graph]
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "x86_64-unknown-linux-musl",
+    "x86_64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+]
+
+# Licenses configuration
+[licenses]
+allow = [
+    "Apache-2.0",
+    "MIT",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "Unicode-DFS-2016",
+    "CC0-1.0",
+]
+copyleft = "allow"
+exceptions = [
+    { allow = ["OpenSSL"], name = "ring", version = "*" },
+]
+
+# Bans configuration
+[bans]
+multiple-versions = "deny"
+wildcards = "allow"
+deny = [
+    { name = "openssl-sys", version = "<0.9.60" },
+    { name = "openssl", version = "<0.10.0" },
+]
+skip = [
+    { name = "winapi", version = "*" },
+]
+skip-tree = []
+
+# Sources configuration
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []
+
+# Advisory database configuration
+[advisories]
+db-path = "~/.cargo/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+vulnerability = "deny"
+unmaintained = "warn"
+yanked = "warn"
+notice = "warn"
+ignore = []

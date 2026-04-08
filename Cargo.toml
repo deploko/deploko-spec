@@ -1,0 +1,17 @@
+[package]
+name = "deploko-spec"
+version = "0.1.0"
+edition = "2024"
+description = "Parser and validator for the Deploko deploko.toml spec"
+keywords = ["deployment", "infrastructure", "paas", "config"]
+categories = ["config", "development-tools"]
+license = "Apache-2.0"
+repository = "https://github.com/deploko/deploko-spec"
+rust-version = "1.94"
+
+[dependencies]
+
+[dev-dependencies]
+insta = "1.0"
+tempfile = "3.0"
+anyhow = "1.0"

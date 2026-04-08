@@ -3,7 +3,7 @@
 Parser and validator crate for the Deploko `deploko.toml` spec.
 
 **SemVer target:** `v0.1.0` first stable publish to crates.io
-**MSRV:** 1.70 (declared in `.clippy.toml`, tested in CI)
+**MSRV:** 1.94 (declared in `.clippy.toml`, tested in CI)
 **Commit convention:** [Conventional Commits](https://www.conventionalcommits.org)
 
 ---
@@ -12,50 +12,50 @@ Parser and validator crate for the Deploko `deploko.toml` spec.
 **Milestone:** `v0.1.0-alpha`
 
 ### 0.1 Cargo Setup
-- [ ] Create `Cargo.toml`
-  - [ ] Inherit `[package]` fields from workspace
-  - [ ] Set `name = "deploko-spec"`
-  - [ ] Set `description = "Parser and validator for the Deploko deploko.toml spec"`
-  - [ ] Set `keywords = ["deployment", "infrastructure", "paas", "config"]`
-  - [ ] Set `categories = ["config", "development-tools"]`
-  - [ ] Dev-dependencies: `insta`, `tempfile`, `anyhow`
+- [x] Create `Cargo.toml`
+  - [x] Set `name = "deploko-spec"`
+  - [x] Set `description = "Parser and validator for the Deploko deploko.toml spec"`
+  - [x] Set `keywords = ["deployment", "infrastructure", "paas", "config"]`
+  - [x] Set `categories = ["config", "development-tools"]`
+  - [x] Dev-dependencies: `insta`, `tempfile`, `anyhow`
 
 ### 0.2 Repo Files
-- [ ] Create `README.md` (crate-specific install and usage) ✅
-- [ ] Create `ARCHITECTURE.md` (module structure, data flow) ✅
-- [ ] Create `LICENSE` (Apache-2.0)
-- [ ] Create `CHANGELOG.md` ([Keep a Changelog](https://keepachangelog.com) format)
-- [ ] Create `.gitignore` (`/target`, `**/*.rs.bk`, `fuzz/corpus/`, `fuzz/artifacts/`)
+- [x] Create `README.md` (crate-specific install and usage)
+- [x] Create `ARCHITECTURE.md` (module structure, data flow)
+- [x] Create `LICENSE` (Apache-2.0)
+- [x] Create `CHANGELOG.md` ([Keep a Changelog](https://keepachangelog.com) format)
+- [x] Create `.gitignore` (`/target`, `**/*.rs.bk`, `fuzz/corpus/`, `fuzz/artifacts/`)
 
 ### 0.3 CI
-- [ ] Create `.github/workflows/ci.yml`
-  - [ ] Job `fmt`: `cargo fmt --all --check`
-  - [ ] Job `clippy`: `cargo clippy --all-targets --all-features -- -D warnings`
-  - [ ] Job `test`: matrix `[ubuntu-latest, macos-latest, windows-latest]` × `[stable, 1.70]`
-    - [ ] Steps: checkout → install toolchain → cache `~/.cargo` and `target/` → `cargo test --all-features`
-    - [ ] Coverage upload on ubuntu/stable via `cargo-llvm-cov` → Codecov
-  - [ ] Job `deny`: `cargo deny check`
-  - [ ] Job `docs`: `cargo doc --no-deps` — fail on broken intra-doc links
-  - [ ] Job `msrv`: install `1.70` toolchain → `cargo check`
-  - [ ] Concurrency group: cancel stale runs on same branch
+- [x] Create `.github/workflows/ci.yml`
+  - [x] Job `fmt`: `cargo fmt --all --check`
+  - [x] Job `clippy`: `cargo clippy --all-targets --all-features -- -D warnings`
+  - [x] Job `test`: matrix `[ubuntu-latest, macos-latest, windows-latest]` × `[stable, 1.94]`
+    - [x] Steps: checkout → install toolchain → cache `~/.cargo` and `target/` → `cargo test --all-features`
+    - [x] Coverage upload on ubuntu/stable via `cargo-llvm-cov` → Codecov
+  - [x] Job `deny`: `cargo deny check`
+  - [x] Job `docs`: `cargo doc --no-deps` — fail on broken intra-doc links
+  - [x] Job `msrv`: install `1.94` toolchain → `cargo check`
+  - [x] Concurrency group: cancel stale runs on same branch
 
-- [ ] Create `.github/workflows/release.yml`
-  - [ ] Trigger: push tags `v[0-9]+.[0-9]+.[0-9]+*`
-  - [ ] Job `validate-tag`: verify tag matches `Cargo.toml` version; verify `CHANGELOG.md` has entry
-  - [ ] Job `publish` (`needs: validate-tag`): `cargo publish -p deploko-spec`
-  - [ ] Job `generate-sbom` (`needs: validate-tag`): `cargo cyclonedx` → upload artifact
-  - [ ] Job `create-release` (`needs: [publish, generate-sbom]`): create GitHub Release with SBOM and CHANGELOG entry
+- [x] Create `.github/workflows/release.yml`
+  - [x] Trigger: push tags `v[0-9]+.[0-9]+.[0-9]+*`
+  - [x] Job `validate-tag`: verify tag matches `Cargo.toml` version; verify `CHANGELOG.md` has entry
+  - [x] Job `publish` (`needs: validate-tag`): `cargo publish -p deploko-spec`
+  - [x] Job `generate-sbom` (`needs: validate-tag`): `cargo cyclonedx` → upload artifact
+  - [x] Job `create-release` (`needs: [publish, generate-sbom]`): create GitHub Release with SBOM and CHANGELOG entry
 
-- [ ] Create `.github/workflows/security.yml`
-  - [ ] Trigger: weekly cron Monday 03:00 UTC + `workflow_dispatch`
-  - [ ] Job `audit`: `cargo audit --json`; on failure open GitHub issue
-  - [ ] Job `deny`: `cargo deny check advisories`; on failure open GitHub issue
+- [x] Create `.github/workflows/security.yml`
+  - [x] Trigger: weekly cron Monday 03:00 UTC + `workflow_dispatch`
+  - [x] Job `audit`: `cargo audit --json`; on failure open GitHub issue
+  - [x] Job `deny`: `cargo deny check advisories`; on failure open GitHub issue
 
-- [ ] Create `.github/dependabot.yml`
-  - [ ] Cargo: weekly, Monday, max 5 PRs, label `dependencies`
-  - [ ] GitHub Actions: monthly, label `ci`
+- [x] Create `.github/dependabot.yml`
+  - [x] Cargo: weekly, Monday, max 5 PRs, label `dependencies`
+  - [x] GitHub Actions: monthly, label `ci`
 
 ### 0.4 DevSecOps
+- [x] Create `.pre-commit-config.yaml` with Rust hooks (fmt, clippy, test)
 - [ ] Enable secret scanning on repo
 - [ ] Enable push protection on repo
 - [ ] Enable private vulnerability reporting
@@ -63,9 +63,9 @@ Parser and validator crate for the Deploko `deploko.toml` spec.
 - [ ] Branch protection `main`: require PR, require CI pass, require signed commits, no force push
 - [ ] Branch protection `develop`: require PR, require CI pass
 - [ ] Install DCO app, add DCO as required status check on `main`
-- [ ] Pin all GitHub Actions workflow steps to full commit SHA
-- [ ] Add `permissions: read-all` default to all workflow files; scope `contents: write` to release job only
-- [ ] Create `.github/workflows/scorecard.yml`: OpenSSF Scorecard, weekly + push to `main`
+- [x] Pin all GitHub Actions workflow steps to full commit SHA
+- [x] Add `permissions: read-all` default to all workflow files; scope `contents: write` to release job only
+- [x] Create `.github/workflows/scorecard.yml`: OpenSSF Scorecard, weekly + push to `main`
 
 ---
 

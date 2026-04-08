@@ -1,0 +1,17 @@
+# Codeowners for deploko-spec
+
+# Default codeowners
+* @kade @SHA888
+
+# Specific file ownership
+*.md @kade @SHA888
+*.yml @kade @SHA888
+*.yaml @kade @SHA888
+*.toml @kade @SHA888
+
+# GitHub Actions workflows
+.github/workflows/* @kade @SHA888
+
+# Configuration files
+.github/dependabot.yml @kade @SHA888
+.github/CODEOWNERS @kade @SHA888
