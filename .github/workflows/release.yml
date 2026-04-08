@@ -18,7 +18,7 @@ jobs:
     outputs:
       version: ${{ steps.get-version.outputs.version }}
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
+    - uses: actions/checkout@v4.2.0  # v4.1.4
     - name: Install jq
       run: sudo apt-get update && sudo apt-get install -y jq
     - name: Get version from Cargo.toml
@@ -50,8 +50,8 @@ jobs:
     needs: validate-tag
     environment: release
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
-    - uses: dtolnay/rust-toolchain@b7218eb8c0c0c542c8764e25580306384d9b0484  # stable
+    - uses: actions/checkout@v4.2.0  # v4.1.4
+    - uses: dtolnay/rust-toolchain@master  # stable
     - name: Publish
       run: cargo publish -p deploko-spec
       env:
@@ -62,14 +62,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: validate-tag
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
-    - uses: dtolnay/rust-toolchain@b7218eb8c0c0c542c8764e25580306384d9b0484  # stable
+    - uses: actions/checkout@v4.2.0  # v4.1.4
+    - uses: dtolnay/rust-toolchain@master  # stable
     - name: Install cargo-cyclonedx
       run: cargo install cargo-cyclonedx
     - name: Generate SBOM
       run: cargo cyclonedx
     - name: Upload SBOM artifact
-      uses: actions/upload-artifact@65462800fd760344b1a7ed4f2fc615188404f0ff  # v4.3.3
+      uses: actions/upload-artifact@v4.3.3
       with:
         name: sbom-${{ needs.validate-tag.outputs.version }}
         path: bom.json
@@ -79,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [validate-tag, publish, generate-sbom]
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
+    - uses: actions/checkout@v4.2.0  # v4.1.4
     - name: Download SBOM artifact
       uses: actions/download-artifact@65a9edc526144402b9b3628a89921a844e6f515e  # v4.1.7
       with:

@@ -23,8 +23,8 @@ jobs:
           - stable
           - 1.94  # MSRV
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
-    - uses: dtolnay/rust-toolchain@b7218eb8c0c0c542c8764e25580306384d9b0484  # master
+    - uses: actions/checkout@v4.2.0  # v4.1.4
+    - uses: dtolnay/rust-toolchain@master
       with:
         toolchain: ${{ matrix.rust }}
     - name: Run tests
@@ -34,8 +34,8 @@ jobs:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
-    - uses: dtolnay/rust-toolchain@b7218eb8c0c0c542c8764e25580306384d9b0484  # stable
+    - uses: actions/checkout@v4.2.0  # v4.1.4
+    - uses: dtolnay/rust-toolchain@master  # stable
       with:
         components: rustfmt
     - name: Check formatting
@@ -45,8 +45,8 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
-    - uses: dtolnay/rust-toolchain@b7218eb8c0c0c542c8764e25580306384d9b0484  # stable
+    - uses: actions/checkout@v4.2.0  # v4.1.4
+    - uses: dtolnay/rust-toolchain@master  # stable
       with:
         components: clippy
     - name: Run clippy
@@ -56,8 +56,8 @@ jobs:
     name: Check
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
-    - uses: dtolnay/rust-toolchain@b7218eb8c0c0c542c8764e25580306384d9b0484  # stable
+    - uses: actions/checkout@v4.2.0  # v4.1.4
+    - uses: dtolnay/rust-toolchain@master  # stable
     - name: Check
       run: cargo check --verbose
 
@@ -65,8 +65,8 @@ jobs:
     name: Dependency Deny
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
-    - uses: dtolnay/rust-toolchain@b7218eb8c0c0c542c8764e25580306384d9b0484  # stable
+    - uses: actions/checkout@v4.2.0  # v4.1.4
+    - uses: dtolnay/rust-toolchain@master  # stable
     - name: Install cargo-deny
       run: cargo install cargo-deny
     - name: Run cargo deny check
@@ -76,7 +76,7 @@ jobs:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
-    - uses: dtolnay/rust-toolchain@b7218eb8c0c0c542c8764e25580306384d9b0484  # stable
+    - uses: actions/checkout@v4.2.0  # v4.1.4
+    - uses: dtolnay/rust-toolchain@master  # stable
     - name: Check documentation
       run: cargo doc --no-deps --document-private-items

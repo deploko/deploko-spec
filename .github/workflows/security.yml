@@ -14,8 +14,8 @@ jobs:
     name: Security Audit
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
-    - uses: dtolnay/rust-toolchain@b7218eb8c0c0c542c8764e25580306384d9b0484  # stable
+    - uses: actions/checkout@v4.2.0  # v4.1.4
+    - uses: dtolnay/rust-toolchain@master  # stable
     - name: Install cargo-audit
       run: cargo install cargo-audit
     - name: Run cargo audit
@@ -33,7 +33,7 @@ jobs:
         fi
     - name: Create issue on failure
       if: steps.parse.outputs.vulnerabilities != '0'
-      uses: actions/github-script@60a0d83039474cb78497165ba3a486f35128096c  # v7.0.1
+      uses: actions/github-script@v7.0.1
       with:
         script: |
           const fs = require('fs');
@@ -66,8 +66,8 @@ jobs:
     name: Dependency Deny
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@0ad4b8fadaa221ab15c9c321fa7481d238b9c0e6  # v4.1.4
-    - uses: dtolnay/rust-toolchain@b7218eb8c0c0c542c8764e25580306384d9b0484  # stable
+    - uses: actions/checkout@v4.2.0  # v4.1.4
+    - uses: dtolnay/rust-toolchain@master  # stable
     - name: Install cargo-deny
       run: cargo install cargo-deny
     - name: Run cargo deny check advisories
