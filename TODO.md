@@ -83,18 +83,18 @@ Parser and validator crate for the Deploko `deploko.toml` spec.
 - [x] Create `src/error.rs`
 
 ### 1.2 Custom Scalar Types (`src/schema.rs`)
-- [ ] Implement `ByteSize` newtype wrapping `u64` (bytes)
-  - [ ] `Deserialize`: parse `"10gb"`, `"500mb"`, `"1tb"`, `"100kb"` → `u64` bytes
-  - [ ] Error on unrecognized unit
-  - [ ] Error on zero value
-  - [ ] `Display`: render as human-readable (e.g. `10 GB`)
-  - [ ] `Serialize`: round-trip as string
-- [ ] Implement `Duration` newtype wrapping `u64` (seconds)
-  - [ ] `Deserialize`: parse `"30d"`, `"7d"`, `"1h"`, `"15m"`, `"60s"` → `u64` seconds
-  - [ ] Error on unrecognized unit
-  - [ ] Error on zero value
-  - [ ] `Display`: render as human-readable (e.g. `30 days`)
-  - [ ] `Serialize`: round-trip as string
+- [x] Implement `ByteSize` newtype wrapping `u64` (bytes)
+  - [x] `Deserialize`: parse `"10gb"`, `"500mb"`, `"1tb"`, `"100kb"` → `u64` bytes
+  - [x] Error on unrecognized unit
+  - [x] Error on zero value
+  - [x] `Display`: render as human-readable (e.g. `10 GB`)
+  - [x] `Serialize`: round-trip as string
+- [x] Implement `Duration` newtype wrapping `u64` (seconds)
+  - [x] `Deserialize`: parse `"30d"`, `"7d"`, `"1h"`, `"15m"`, `"60s"` → `u64` seconds
+  - [x] Error on unrecognized unit
+  - [x] Error on zero value
+  - [x] `Display`: render as human-readable (e.g. `30 days`)
+  - [x] `Serialize`: round-trip as string
 
 ### 1.3 Secret Types (`src/schema.rs`)
 - [ ] Implement `SecretRef(String)` newtype
