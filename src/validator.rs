@@ -121,7 +121,8 @@ fn validate_project(project: &ProjectConfig, report: &mut ValidationReport) {
         });
     } else if !is_valid_name(&project.name) {
         report.add_error(ValidationError {
-            message: "Project name contains invalid characters".to_string(),
+            message: "Project name contains invalid characters (allowed: alphanumeric, '-', '_')"
+                .to_string(),
             field: "project.name".to_string(),
             severity: ErrorSeverity::Error,
         });
@@ -135,7 +136,9 @@ fn validate_project(project: &ProjectConfig, report: &mut ValidationReport) {
         && !is_valid_name(env)
     {
         report.add_error(ValidationError {
-            message: "Environment name contains invalid characters".to_string(),
+            message:
+                "Environment name contains invalid characters (allowed: alphanumeric, '-', '_')"
+                    .to_string(),
             field: "project.environment".to_string(),
             severity: ErrorSeverity::Error,
         });
@@ -207,6 +210,14 @@ fn validate_scale_config(scale: &crate::schema::ScaleConfig, report: &mut Valida
         });
     }
 
+    if scale.max == 0 {
+        report.add_error(ValidationError {
+            message: "Maximum instances cannot be zero".to_string(),
+            field: "scale.max".to_string(),
+            severity: ErrorSeverity::Error,
+        });
+    }
+
     if scale.max < scale.min {
         report.add_error(ValidationError {
             message: "Maximum instances cannot be less than minimum".to_string(),
@@ -234,6 +245,12 @@ fn validate_health_check_config(
     if health_check.path.is_empty() {
         report.add_error(ValidationError {
             message: "Health check path cannot be empty".to_string(),
+            field: "health_check.path".to_string(),
+            severity: ErrorSeverity::Error,
+        });
+    } else if !health_check.path.starts_with('/') {
+        report.add_error(ValidationError {
+            message: "Health check path must start with '/'".to_string(),
             field: "health_check.path".to_string(),
             severity: ErrorSeverity::Error,
         });
@@ -309,7 +326,9 @@ fn validate_environments(
     for name in environments.keys() {
         if !is_valid_name(name) {
             report.add_error(ValidationError {
-                message: "Environment name contains invalid characters".to_string(),
+                message:
+                    "Environment name contains invalid characters (allowed: alphanumeric, '-', '_')"
+                        .to_string(),
                 field: format!("environments.{}", name),
                 severity: ErrorSeverity::Error,
             });
@@ -328,7 +347,7 @@ fn validate_env_values(
     for (key, value) in env_vars {
         if !is_valid_env_key(key) {
             report.add_error(ValidationError {
-                message: "Environment variable key contains invalid characters".to_string(),
+                message: "Environment variable key contains invalid characters (allowed: alphabetic start, then alphanumeric or '_')".to_string(),
                 field: format!("env.{}", key),
                 severity: ErrorSeverity::Error,
             });

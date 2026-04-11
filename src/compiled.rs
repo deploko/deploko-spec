@@ -62,9 +62,9 @@ pub fn compile(spec: &DeploySpec, environment: Option<&str>) -> Result<CompiledS
     // Compile project configuration
     let project = compile_project(&spec.project, env_overrides);
 
-    // Compile other configurations (these don't use EnvironmentOverride directly anymore)
+    // Compile other configurations
     let frontend = spec.frontend.clone();
-    let backend = spec.backend.clone();
+    let backend = compile_backend(spec.backend.as_ref(), env_overrides);
     let database = compile_database(spec.database.as_ref(), env_overrides);
     let auth = spec.auth.clone();
     let storage = spec.storage.clone();
@@ -123,6 +123,25 @@ fn compile_project(base: &ProjectConfig, overrides: Option<&EnvironmentOverride>
     }
 }
 
+/// Compile backend configuration with overrides.
+fn compile_backend(
+    base: Option<&BackendConfig>,
+    overrides: Option<&EnvironmentOverride>,
+) -> Option<BackendConfig> {
+    match (base, overrides) {
+        (Some(base), Some(overrides)) => {
+            let mut result = base.clone();
+            // Apply scale override if present
+            if let Some(override_scale) = &overrides.scale {
+                result.scale = Some(override_scale.clone());
+            }
+            Some(result)
+        }
+        (Some(base), None) => Some(base.clone()),
+        (None, Some(_)) | (None, None) => None,
+    }
+}
+
 /// Compile database configuration with overrides.
 fn compile_database(
     base: Option<&DatabaseConfig>,
@@ -133,8 +152,13 @@ fn compile_database(
             let mut result = base.clone();
             if let Some(override_db) = &overrides.database {
                 result.engine = override_db.engine;
-                result.version = override_db.version.clone();
-                result.instance_size = override_db.instance_size.clone();
+                // Only overwrite if override value is non-empty
+                if !override_db.version.is_empty() {
+                    result.version = override_db.version.clone();
+                }
+                if !override_db.instance_size.is_empty() {
+                    result.instance_size = override_db.instance_size.clone();
+                }
                 if override_db.pooler.is_some() {
                     result.pooler = override_db.pooler;
                 }

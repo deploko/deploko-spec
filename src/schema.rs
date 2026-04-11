@@ -746,15 +746,6 @@ pub struct AuthConfig {
     pub refresh_token_expiry: Option<Duration>,
 }
 
-/// Authentication provider configuration.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct AuthProvider {
-    /// Provider type (email, oauth, etc.)
-    pub provider: String,
-    /// Provider-specific configuration
-    pub config: HashMap<String, String>,
-}
-
 /// Storage configuration.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct StorageConfig {
