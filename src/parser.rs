@@ -63,22 +63,24 @@ mod tests {
         let config = r#"
 [project]
 name = "test-app"
-region = "us-west-2"
+region = "us-east-1"
 
 [frontend]
-framework = "react"
+framework = "static"
 repo = "https://github.com/example/app.git"
 branch = "main"
 build_command = "npm run build"
 "#;
 
+        use crate::schema::{Framework, Region};
+
         let spec = parse_str(config).unwrap();
         assert_eq!(spec.project.name, "test-app");
-        assert_eq!(spec.project.region, "us-west-2");
+        assert_eq!(spec.project.region, Region::UsEast1);
         assert!(spec.frontend.is_some());
 
         let frontend = spec.frontend.unwrap();
-        assert_eq!(frontend.framework, "react");
+        assert_eq!(frontend.framework, Framework::Static);
         assert_eq!(frontend.repo, "https://github.com/example/app.git");
     }
 
@@ -90,9 +92,11 @@ name = "minimal-app"
 region = "us-east-1"
 "#;
 
+        use crate::schema::Region;
+
         let spec = parse_str(config).unwrap();
         assert_eq!(spec.project.name, "minimal-app");
-        assert_eq!(spec.project.region, "us-east-1");
+        assert_eq!(spec.project.region, Region::UsEast1);
         assert!(spec.frontend.is_none());
         assert!(spec.backend.is_none());
     }
@@ -116,7 +120,7 @@ name = "invalid-toml"
         let config = r#"
 [project]
 name = "found-app"
-region = "eu-west-1"
+region = "eu-central-1"
 "#;
 
         fs::write(&config_path, config).unwrap();

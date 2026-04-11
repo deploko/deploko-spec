@@ -571,7 +571,7 @@ pub enum AuthProviderKind {
 }
 
 /// A complete deployment specification.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct DeploySpec {
     /// Project metadata
     pub project: ProjectConfig,
@@ -588,9 +588,9 @@ pub struct DeploySpec {
     /// Observability configuration
     pub observability: Option<ObservabilityConfig>,
     /// Environment variables
-    pub env: Option<HashMap<String, String>>,
+    pub env: Option<HashMap<String, EnvValue>>,
     /// Environment-specific overrides
-    pub environments: Option<HashMap<String, EnvironmentConfig>>,
+    pub environments: Option<HashMap<String, EnvironmentOverride>>,
 }
 
 /// Project metadata and basic configuration.
@@ -599,37 +599,56 @@ pub struct ProjectConfig {
     /// Project name
     pub name: String,
     /// Target deployment region
-    pub region: String,
+    pub region: Region,
     /// Default environment
     pub environment: Option<String>,
+}
+
+impl Default for ProjectConfig {
+    fn default() -> Self {
+        Self {
+            name: "default".to_string(),
+            region: Region::UsEast1,
+            environment: Some("development".to_string()),
+        }
+    }
 }
 
 /// Frontend service configuration.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct FrontendConfig {
     /// Frontend framework
-    pub framework: String,
+    pub framework: Framework,
     /// Git repository URL
     pub repo: String,
     /// Git branch to deploy
     pub branch: String,
     /// Build command
-    pub build_command: String,
+    #[serde(rename = "build_command")]
+    pub build_cmd: String,
     /// Output directory
     pub output_dir: Option<String>,
+    /// Environment variables
+    pub env: Option<HashMap<String, EnvValue>>,
+    /// Node.js version
+    pub node_version: Option<String>,
 }
 
 /// Backend service configuration.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct BackendConfig {
     /// Runtime environment
-    pub runtime: String,
+    pub runtime: Runtime,
     /// Dockerfile path
     pub dockerfile: Option<String>,
     /// Scaling configuration
     pub scale: Option<ScaleConfig>,
     /// Health check configuration
     pub health_check: Option<HealthCheckConfig>,
+    /// Environment variables
+    pub env: Option<HashMap<String, EnvValue>>,
+    /// Service port
+    pub port: Option<u16>,
 }
 
 /// Scaling configuration for services.
@@ -643,32 +662,55 @@ pub struct ScaleConfig {
     pub target_cpu: Option<u32>,
 }
 
+impl Default for ScaleConfig {
+    fn default() -> Self {
+        Self {
+            min: 1,
+            max: 1,
+            target_cpu: None,
+        }
+    }
+}
+
 /// Health check configuration.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct HealthCheckConfig {
     /// Health check endpoint
     pub path: String,
     /// Check interval in seconds
-    pub interval: u32,
+    #[serde(rename = "interval")]
+    pub interval_secs: u32,
     /// Timeout in seconds
-    pub timeout: u32,
-    /// Required successful checks
-    pub healthy_threshold: u32,
-    /// Allowed failed checks
-    pub unhealthy_threshold: u32,
+    #[serde(rename = "timeout")]
+    pub timeout_secs: u32,
+    /// Number of retries before marking unhealthy
+    pub retries: u32,
+}
+
+impl Default for HealthCheckConfig {
+    fn default() -> Self {
+        Self {
+            path: "/health".to_string(),
+            interval_secs: 30,
+            timeout_secs: 5,
+            retries: 3,
+        }
+    }
 }
 
 /// Database configuration.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DatabaseConfig {
     /// Database engine
-    pub engine: String,
+    pub engine: DatabaseEngine,
     /// Engine version
     pub version: String,
     /// Instance size
     pub instance_size: String,
-    /// Connection pooler configuration
-    pub connection_pooler: Option<bool>,
+    /// Connection pooler enabled
+    pub pooler: Option<bool>,
+    /// Database extensions to enable
+    pub extensions: Option<Vec<String>>,
     /// Backup configuration
     pub backups: Option<BackupConfig>,
 }
@@ -676,17 +718,32 @@ pub struct DatabaseConfig {
 /// Backup configuration.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct BackupConfig {
-    /// Backup retention period in days
-    pub retention_days: u32,
-    /// Backup window (cron format)
-    pub backup_window: String,
+    /// Backup schedule frequency
+    pub schedule: BackupSchedule,
+    /// Backup retention duration
+    pub retain: Duration,
+}
+
+impl Default for BackupConfig {
+    fn default() -> Self {
+        Self {
+            schedule: BackupSchedule::Daily,
+            retain: Duration::from_seconds(86400 * 7), // 7 days
+        }
+    }
 }
 
 /// Authentication configuration.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AuthConfig {
+    /// Whether authentication is enabled
+    pub enabled: bool,
     /// Authentication providers
-    pub providers: Vec<AuthProvider>,
+    pub providers: Vec<AuthProviderKind>,
+    /// JWT token expiry duration
+    pub jwt_expiry: Option<Duration>,
+    /// Refresh token expiry duration
+    pub refresh_token_expiry: Option<Duration>,
 }
 
 /// Authentication provider configuration.
@@ -701,14 +758,27 @@ pub struct AuthProvider {
 /// Storage configuration.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct StorageConfig {
+    /// Whether storage is enabled
+    pub enabled: bool,
     /// Storage size limit
-    pub size_limit: Option<String>,
-    /// Storage type
-    pub storage_type: Option<String>,
+    pub limit: Option<ByteSize>,
+    /// Public bucket names
+    pub public_buckets: Option<Vec<String>>,
+}
+
+/// Alert configuration.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AlertConfig {
+    /// Email addresses for alerts
+    pub email: Option<Vec<String>>,
+    /// Slack webhook URL
+    pub slack_webhook: Option<String>,
+    /// PagerDuty integration key
+    pub pagerduty_key: Option<String>,
 }
 
 /// Observability configuration.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct ObservabilityConfig {
     /// Logging configuration
     pub logs: Option<LogsConfig>,
@@ -717,7 +787,7 @@ pub struct ObservabilityConfig {
     /// Uptime monitoring
     pub uptime: Option<UptimeConfig>,
     /// Alerting configuration
-    pub alerts: Option<AlertsConfig>,
+    pub alerts: Option<AlertConfig>,
 }
 
 /// Logging configuration.
@@ -747,56 +817,19 @@ pub struct UptimeConfig {
     pub interval: Option<u32>,
 }
 
-/// Alerting configuration.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct AlertsConfig {
-    /// Alerting enabled
-    pub enabled: bool,
-    /// Alert channels
-    pub channels: Vec<String>,
-}
-
 /// Environment-specific configuration overrides.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct EnvironmentConfig {
-    /// Environment name
-    pub name: String,
-    /// Project overrides
-    pub project: Option<ProjectConfig>,
-    /// Frontend overrides
-    pub frontend: Option<FrontendConfig>,
-    /// Backend overrides
-    pub backend: Option<BackendConfig>,
-    /// Database overrides
+pub struct EnvironmentOverride {
+    /// Region override
+    pub region: Option<Region>,
+    /// Scaling override
+    pub scale: Option<ScaleConfig>,
+    /// Database override
     pub database: Option<DatabaseConfig>,
-    /// Auth overrides
-    pub auth: Option<AuthConfig>,
-    /// Storage overrides
-    pub storage: Option<StorageConfig>,
-    /// Observability overrides
+    /// Environment variables
+    pub env: Option<HashMap<String, EnvValue>>,
+    /// Observability override
     pub observability: Option<ObservabilityConfig>,
-    /// Environment variable overrides
-    pub env: Option<HashMap<String, String>>,
-}
-
-impl Default for DeploySpec {
-    fn default() -> Self {
-        Self {
-            project: ProjectConfig {
-                name: "default".to_string(),
-                region: "us-east-1".to_string(),
-                environment: Some("development".to_string()),
-            },
-            frontend: None,
-            backend: None,
-            database: None,
-            auth: None,
-            storage: None,
-            observability: None,
-            env: None,
-            environments: None,
-        }
-    }
 }
 
 #[cfg(test)]

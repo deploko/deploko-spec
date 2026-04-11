@@ -128,19 +128,20 @@ Parser and validator crate for the Deploko `deploko.toml` spec.
 - [x] `AuthProviderKind` enum: `Email`, `Google`, `Github`, `Apple`, `Discord`, `Slack`
 
 ### 1.5 Config Structs (`src/schema.rs`)
-- [ ] `ProjectConfig`: `name: String`, `region: Region`, `environment: Option<String>`
-- [ ] `ScaleConfig`: `min: u32` (default 1), `max: u32` (default 1) + `Default` impl
-- [ ] `HealthcheckConfig`: `path` (default `"/health"`), `interval_secs` (30), `timeout_secs` (5), `retries` (3)
-- [ ] `BackupConfig`: `schedule: BackupSchedule`, `retain: Duration` + `Default` impl
-- [ ] `FrontendConfig`: `framework`, `repo`, `branch`, `build_cmd`, `output_dir`, `env`, `node_version`
-- [ ] `BackendConfig`: `runtime`, `dockerfile`, `scale`, `healthcheck`, `env`, `port`
-- [ ] `DatabaseConfig`: `engine`, `version`, `pooler`, `extensions`, `backups`
-- [ ] `AuthConfig`: `enabled`, `providers`, `jwt_expiry`, `refresh_token_expiry`
-- [ ] `StorageConfig`: `enabled`, `limit`, `public_buckets`
-- [ ] `AlertConfig`: `email`, `slack_webhook`, `pagerduty_key`
-- [ ] `ObservabilityConfig`: `logs`, `metrics`, `uptime`, `alerts` + `Default` impl
-- [ ] `EnvironmentOverride`: `region`, `scale`, `database`, `env`, `observability`
-- [ ] `DeploySpec` (top-level): all sections as `Option<*Config>` except `project`
+- [x] `ProjectConfig`: `name: String`, `region: Region`, `environment: Option<String>` + `Default` impl
+- [x] `ScaleConfig`: `min: u32` (default 1), `max: u32` (default 1) + `Default` impl
+- [x] `HealthCheckConfig`: `path` (default `"/health"`), `interval_secs` (30), `timeout_secs` (5), `retries` (3) + `Default` impl
+- [x] `BackupConfig`: `schedule: BackupSchedule`, `retain: Duration` + `Default` impl
+- [x] `FrontendConfig`: `framework: Framework`, `repo`, `branch`, `build_cmd`, `output_dir`, `env`, `node_version`
+- [x] `BackendConfig`: `runtime: Runtime`, `dockerfile`, `scale`, `health_check`, `env`, `port`
+- [x] `DatabaseConfig`: `engine: DatabaseEngine`, `version`, `pooler`, `extensions`, `backups`
+- [x] `AuthConfig`: `enabled`, `providers: Vec<AuthProviderKind>`, `jwt_expiry`, `refresh_token_expiry`
+- [x] `StorageConfig`: `enabled`, `limit: Option<ByteSize>`, `public_buckets`
+- [x] `AlertConfig`: `email`, `slack_webhook`, `pagerduty_key`
+- [x] `ObservabilityConfig`: `logs`, `metrics`, `uptime`, `alerts: Option<AlertConfig>` + `Default` impl
+- [x] `EnvironmentOverride`: `region`, `scale`, `database`, `env`, `observability`
+- [x] `DeploySpec` (top-level): all sections as `Option<*Config>` except `project`
+- [ ] Update `compiled.rs` and `validator.rs` to use new schema types (breaking changes from EnvironmentConfig→EnvironmentOverride)
 
 ---
 

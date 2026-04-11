@@ -3,7 +3,9 @@
 //! This module provides functionality to validate parsed deployment specifications
 //! against the Deploko specification rules and constraints.
 
-use crate::schema::{BackendConfig, DatabaseConfig, DeploySpec, FrontendConfig, ProjectConfig};
+use crate::schema::{
+    BackendConfig, DatabaseConfig, DeploySpec, EnvValue, FrontendConfig, ProjectConfig,
+};
 use std::collections::HashMap;
 
 /// A validation report containing all found issues.
@@ -102,7 +104,7 @@ pub fn validate(spec: &DeploySpec) -> ValidationReport {
 
     // Validate environment variables
     if let Some(env_vars) = &spec.env {
-        validate_env_vars(env_vars, &mut report);
+        validate_env_values(env_vars, &mut report);
     }
 
     report
@@ -125,19 +127,8 @@ fn validate_project(project: &ProjectConfig, report: &mut ValidationReport) {
         });
     }
 
-    // Validate region
-    if project.region.is_empty() {
-        report.add_error(ValidationError {
-            message: "Region cannot be empty".to_string(),
-            field: "project.region".to_string(),
-            severity: ErrorSeverity::Critical,
-        });
-    } else if !is_valid_region(&project.region) {
-        report.add_warning(ValidationWarning {
-            message: "Unknown region format".to_string(),
-            field: "project.region".to_string(),
-        });
-    }
+    // Region is now an enum, so it's always valid
+    // (no additional validation needed)
 
     // Validate default environment
     if let Some(env) = &project.environment
@@ -153,14 +144,8 @@ fn validate_project(project: &ProjectConfig, report: &mut ValidationReport) {
 
 /// Validate frontend configuration.
 fn validate_frontend(frontend: &FrontendConfig, report: &mut ValidationReport) {
-    // Validate framework
-    if frontend.framework.is_empty() {
-        report.add_error(ValidationError {
-            message: "Frontend framework cannot be empty".to_string(),
-            field: "frontend.framework".to_string(),
-            severity: ErrorSeverity::Critical,
-        });
-    }
+    // Framework is now an enum, so it's always valid
+    // (no additional validation needed)
 
     // Validate repository URL
     if frontend.repo.is_empty() {
@@ -187,10 +172,10 @@ fn validate_frontend(frontend: &FrontendConfig, report: &mut ValidationReport) {
     }
 
     // Validate build command
-    if frontend.build_command.is_empty() {
+    if frontend.build_cmd.is_empty() {
         report.add_error(ValidationError {
             message: "Build command cannot be empty".to_string(),
-            field: "frontend.build_command".to_string(),
+            field: "frontend.build_cmd".to_string(),
             severity: ErrorSeverity::Critical,
         });
     }
@@ -198,78 +183,88 @@ fn validate_frontend(frontend: &FrontendConfig, report: &mut ValidationReport) {
 
 /// Validate backend configuration.
 fn validate_backend(backend: &BackendConfig, report: &mut ValidationReport) {
-    // Validate runtime
-    if backend.runtime.is_empty() {
+    // Runtime is now an enum, so it's always valid
+    // (no additional validation needed)
+
+    // Validate scale configuration if present
+    if let Some(scale) = &backend.scale {
+        validate_scale_config(scale, report);
+    }
+
+    // Validate health check configuration if present
+    if let Some(health_check) = &backend.health_check {
+        validate_health_check_config(health_check, report);
+    }
+}
+
+/// Validate scale configuration.
+fn validate_scale_config(scale: &crate::schema::ScaleConfig, report: &mut ValidationReport) {
+    if scale.min == 0 {
         report.add_error(ValidationError {
-            message: "Backend runtime cannot be empty".to_string(),
-            field: "backend.runtime".to_string(),
-            severity: ErrorSeverity::Critical,
+            message: "Minimum instances cannot be zero".to_string(),
+            field: "scale.min".to_string(),
+            severity: ErrorSeverity::Error,
         });
     }
 
-    // Validate scaling configuration
-    if let Some(scale) = &backend.scale {
-        if scale.min == 0 {
-            report.add_error(ValidationError {
-                message: "Minimum instances cannot be zero".to_string(),
-                field: "backend.scale.min".to_string(),
-                severity: ErrorSeverity::Error,
-            });
-        }
-
-        if scale.max < scale.min {
-            report.add_error(ValidationError {
-                message: "Maximum instances must be greater than or equal to minimum".to_string(),
-                field: "backend.scale.max".to_string(),
-                severity: ErrorSeverity::Critical,
-            });
-        }
-
-        if let Some(target_cpu) = scale.target_cpu
-            && target_cpu > 100
-        {
-            report.add_error(ValidationError {
-                message: "Target CPU cannot exceed 100%".to_string(),
-                field: "backend.scale.target_cpu".to_string(),
-                severity: ErrorSeverity::Error,
-            });
-        }
+    if scale.max < scale.min {
+        report.add_error(ValidationError {
+            message: "Maximum instances cannot be less than minimum".to_string(),
+            field: "scale.max".to_string(),
+            severity: ErrorSeverity::Error,
+        });
     }
 
-    // Validate health check configuration
-    if let Some(health_check) = &backend.health_check {
-        if health_check.path.is_empty() {
-            report.add_error(ValidationError {
-                message: "Health check path cannot be empty".to_string(),
-                field: "backend.health_check.path".to_string(),
-                severity: ErrorSeverity::Error,
-            });
-        }
+    if let Some(target_cpu) = scale.target_cpu
+        && target_cpu > 100
+    {
+        report.add_error(ValidationError {
+            message: "Target CPU cannot exceed 100%".to_string(),
+            field: "scale.target_cpu".to_string(),
+            severity: ErrorSeverity::Error,
+        });
+    }
+}
 
-        if health_check.interval == 0 {
-            report.add_error(ValidationError {
-                message: "Health check interval cannot be zero".to_string(),
-                field: "backend.health_check.interval".to_string(),
-                severity: ErrorSeverity::Error,
-            });
-        }
+/// Validate health check configuration.
+fn validate_health_check_config(
+    health_check: &crate::schema::HealthCheckConfig,
+    report: &mut ValidationReport,
+) {
+    if health_check.path.is_empty() {
+        report.add_error(ValidationError {
+            message: "Health check path cannot be empty".to_string(),
+            field: "health_check.path".to_string(),
+            severity: ErrorSeverity::Error,
+        });
+    }
 
-        if health_check.timeout >= health_check.interval {
-            report.add_error(ValidationError {
-                message: "Health check timeout must be less than interval".to_string(),
-                field: "backend.health_check.timeout".to_string(),
-                severity: ErrorSeverity::Error,
-            });
-        }
+    if health_check.interval_secs == 0 {
+        report.add_error(ValidationError {
+            message: "Health check interval cannot be zero".to_string(),
+            field: "health_check.interval_secs".to_string(),
+            severity: ErrorSeverity::Error,
+        });
+    }
+
+    if health_check.timeout_secs >= health_check.interval_secs {
+        report.add_error(ValidationError {
+            message: "Health check timeout must be less than interval".to_string(),
+            field: "health_check.timeout_secs".to_string(),
+            severity: ErrorSeverity::Error,
+        });
     }
 }
 
 /// Validate database configuration.
 fn validate_database(database: &DatabaseConfig, report: &mut ValidationReport) {
-    // Validate engine
-    if database.engine.is_empty() {
+    // Validate engine is supported
+    if !is_supported_database_engine(&database.engine) {
         report.add_error(ValidationError {
-            message: "Database engine cannot be empty".to_string(),
+            message: format!(
+                "Database engine {:?} is not supported (only Postgres is supported)",
+                database.engine
+            ),
             field: "database.engine".to_string(),
             severity: ErrorSeverity::Critical,
         });
@@ -294,23 +289,24 @@ fn validate_database(database: &DatabaseConfig, report: &mut ValidationReport) {
     }
 
     // Validate backup configuration
-    if let Some(backups) = &database.backups
-        && backups.retention_days == 0
-    {
-        report.add_error(ValidationError {
-            message: "Backup retention days cannot be zero".to_string(),
-            field: "database.backups.retention_days".to_string(),
-            severity: ErrorSeverity::Error,
-        });
+    if let Some(backups) = &database.backups {
+        // Validate retention duration is not zero
+        if backups.retain.seconds() == 0 {
+            report.add_error(ValidationError {
+                message: "Backup retention duration cannot be zero".to_string(),
+                field: "database.backups.retain".to_string(),
+                severity: ErrorSeverity::Error,
+            });
+        }
     }
 }
 
 /// Validate environment configurations.
 fn validate_environments(
-    environments: &HashMap<String, crate::schema::EnvironmentConfig>,
+    environments: &HashMap<String, crate::schema::EnvironmentOverride>,
     report: &mut ValidationReport,
 ) {
-    for (name, env_config) in environments {
+    for name in environments.keys() {
         if !is_valid_name(name) {
             report.add_error(ValidationError {
                 message: "Environment name contains invalid characters".to_string(),
@@ -319,19 +315,16 @@ fn validate_environments(
             });
         }
 
-        // Validate that environment name matches config name
-        if env_config.name != *name {
-            report.add_error(ValidationError {
-                message: "Environment key does not match config name".to_string(),
-                field: format!("environments.{}.name", name),
-                severity: ErrorSeverity::Error,
-            });
-        }
+        // EnvironmentOverride doesn't have a name field - validation not needed
+        // (the HashMap key serves as the environment name)
     }
 }
 
-/// Validate environment variables.
-fn validate_env_vars(env_vars: &HashMap<String, String>, report: &mut ValidationReport) {
+/// Validate environment variables (EnvValue version).
+fn validate_env_values(
+    env_vars: &HashMap<String, crate::schema::EnvValue>,
+    report: &mut ValidationReport,
+) {
     for (key, value) in env_vars {
         if !is_valid_env_key(key) {
             report.add_error(ValidationError {
@@ -341,7 +334,12 @@ fn validate_env_vars(env_vars: &HashMap<String, String>, report: &mut Validation
             });
         }
 
-        if value.is_empty() {
+        // Check if the value is effectively empty
+        let is_empty = match value {
+            EnvValue::Literal(s) => s.is_empty(),
+            EnvValue::Secret(_) => false, // Secrets are never "empty"
+        };
+        if is_empty {
             report.add_warning(ValidationWarning {
                 message: "Environment variable value is empty".to_string(),
                 field: format!("env.{}", key),
@@ -358,23 +356,9 @@ fn is_valid_name(name: &str) -> bool {
             .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
 }
 
-/// Check if a region name follows expected format.
-fn is_valid_region(region: &str) -> bool {
-    // Basic validation for common AWS region format: us-east-1, eu-west-2, etc.
-    let parts: Vec<&str> = region.split('-').collect();
-    if parts.len() != 3 {
-        return false;
-    }
-
-    let (prefix, direction, number) = (parts[0], parts[1], parts[2]);
-
-    (prefix == "us" || prefix == "eu" || prefix == "ap" || prefix == "ca" || prefix == "sa")
-        && (direction == "east"
-            || direction == "west"
-            || direction == "central"
-            || direction == "south"
-            || direction == "north")
-        && number.parse::<u32>().is_ok()
+/// Check if a database engine is supported.
+fn is_supported_database_engine(engine: &crate::schema::DatabaseEngine) -> bool {
+    matches!(engine, crate::schema::DatabaseEngine::Postgres)
 }
 
 /// Check if a URL is a valid Git repository URL.
@@ -396,13 +380,13 @@ fn is_valid_env_key(key: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::schema::{BackendConfig, FrontendConfig, ProjectConfig, ScaleConfig};
+    use crate::schema::{BackendConfig, FrontendConfig, ProjectConfig};
 
     #[test]
     fn test_valid_project() {
         let project = ProjectConfig {
             name: "test-app".to_string(),
-            region: "us-east-1".to_string(),
+            region: crate::schema::Region::UsEast1,
             environment: Some("production".to_string()),
         };
 
@@ -417,7 +401,7 @@ mod tests {
     fn test_invalid_project_name() {
         let project = ProjectConfig {
             name: "".to_string(),
-            region: "us-east-1".to_string(),
+            region: crate::schema::Region::UsEast1,
             environment: None,
         };
 
@@ -431,11 +415,13 @@ mod tests {
     #[test]
     fn test_valid_frontend() {
         let frontend = FrontendConfig {
-            framework: "react".to_string(),
+            framework: crate::schema::Framework::Vite,
             repo: "https://github.com/example/app.git".to_string(),
             branch: "main".to_string(),
-            build_command: "npm run build".to_string(),
+            build_cmd: "npm run build".to_string(),
             output_dir: Some("build".to_string()),
+            env: None,
+            node_version: None,
         };
 
         let mut report = ValidationReport::new();
@@ -447,6 +433,8 @@ mod tests {
 
     #[test]
     fn test_invalid_scale_config() {
+        use crate::schema::ScaleConfig;
+
         let scale = ScaleConfig {
             min: 5,
             max: 2, // Invalid: max < min
@@ -454,10 +442,12 @@ mod tests {
         };
 
         let backend = BackendConfig {
-            runtime: "node".to_string(),
+            runtime: crate::schema::Runtime::Node,
             dockerfile: None,
             scale: Some(scale),
             health_check: None,
+            env: None,
+            port: None,
         };
 
         let mut report = ValidationReport::new();
