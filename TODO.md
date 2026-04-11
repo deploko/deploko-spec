@@ -141,7 +141,7 @@ Parser and validator crate for the Deploko `deploko.toml` spec.
 - [x] `ObservabilityConfig`: `logs`, `metrics`, `uptime`, `alerts: Option<AlertConfig>` + `Default` impl
 - [x] `EnvironmentOverride`: `region`, `scale`, `database`, `env`, `observability`
 - [x] `DeploySpec` (top-level): all sections as `Option<*Config>` except `project`
-- [ ] Update `compiled.rs` and `validator.rs` to use new schema types (breaking changes from EnvironmentConfig→EnvironmentOverride)
+- [x] Update `compiled.rs` and `validator.rs` to use new schema types (breaking changes from EnvironmentConfig→EnvironmentOverride)
 
 ---
 
