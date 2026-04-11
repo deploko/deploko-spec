@@ -108,24 +108,24 @@ Parser and validator crate for the Deploko `deploko.toml` spec.
   - [x] `Display`: `Literal` → raw value; `Secret` → `[secret:KEY]` (never expose value)
 
 ### 1.4 Enums (`src/schema.rs`)
-- [ ] `Region` enum
-  - [ ] `ApSoutheast1` → `"ap-southeast-1"`
-  - [ ] `EuCentral1` → `"eu-central-1"`
-  - [ ] `UsEast1` → `"us-east-1"`
-  - [ ] `Display` with full city name
-  - [ ] `FromStr` for CLI arg parsing
-- [ ] `Framework` enum
-  - [ ] Variants: `Nextjs`, `Sveltekit`, `Nuxt`, `Astro`, `Remix`, `Vite`, `Static`
-  - [ ] `default_output_dir(&self) -> &str` per variant
-  - [ ] `default_build_cmd(&self) -> &str` per variant
-- [ ] `Runtime` enum
-  - [ ] Variants: `Rust`, `Node`, `Python`, `Go`, `Java`, `Ruby`, `Php`, `Docker`
-  - [ ] `default_dockerfile_hint(&self) -> &str` (base image suggestion)
-- [ ] `DatabaseEngine` enum
-  - [ ] `Postgres` → `"postgres"`
-  - [ ] `Mysql`, `Redis` → parse but emit unsupported error in validator
-- [ ] `BackupSchedule` enum: `Hourly`, `Daily`, `Weekly`
-- [ ] `AuthProvider` enum: `Email`, `Google`, `Github`, `Apple`, `Discord`, `Slack`
+- [x] `Region` enum
+  - [x] `ApSoutheast1` → `"ap-southeast-1"`
+  - [x] `EuCentral1` → `"eu-central-1"`
+  - [x] `UsEast1` → `"us-east-1"`
+  - [x] `Display` with full city name
+  - [x] `FromStr` for CLI arg parsing
+- [x] `Framework` enum
+  - [x] Variants: `Nextjs`, `Sveltekit`, `Nuxt`, `Astro`, `Remix`, `Vite`, `Static`
+  - [x] `default_output_dir(&self) -> &str` per variant
+  - [x] `default_build_cmd(&self) -> &str` per variant
+- [x] `Runtime` enum
+  - [x] Variants: `Rust`, `Node`, `Python`, `Go`, `Java`, `Ruby`, `Php`, `Docker`
+  - [x] `default_dockerfile_hint(&self) -> &str` (base image suggestion)
+- [x] `DatabaseEngine` enum
+  - [x] `Postgres` → `"postgres"`
+  - [x] `Mysql`, `Redis` → parse but emit unsupported error in validator
+- [x] `BackupSchedule` enum: `Hourly`, `Daily`, `Weekly`
+- [x] `AuthProviderKind` enum: `Email`, `Google`, `Github`, `Apple`, `Discord`, `Slack`
 
 ### 1.5 Config Structs (`src/schema.rs`)
 - [ ] `ProjectConfig`: `name: String`, `region: Region`, `environment: Option<String>`

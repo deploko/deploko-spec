@@ -405,6 +405,171 @@ impl Serialize for EnvValue {
     }
 }
 
+/// Deployment region with full city name display.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Region {
+    /// Asia Pacific (Singapore)
+    #[serde(rename = "ap-southeast-1")]
+    ApSoutheast1,
+    /// Europe (Frankfurt)
+    #[serde(rename = "eu-central-1")]
+    EuCentral1,
+    /// US East (N. Virginia)
+    #[serde(rename = "us-east-1")]
+    UsEast1,
+}
+
+impl fmt::Display for Region {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Region::ApSoutheast1 => write!(f, "Singapore"),
+            Region::EuCentral1 => write!(f, "Frankfurt"),
+            Region::UsEast1 => write!(f, "N. Virginia"),
+        }
+    }
+}
+
+impl FromStr for Region {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "ap-southeast-1" => Ok(Region::ApSoutheast1),
+            "eu-central-1" => Ok(Region::EuCentral1),
+            "us-east-1" => Ok(Region::UsEast1),
+            _ => Err(format!("Unknown region: {}", s)),
+        }
+    }
+}
+
+/// Frontend framework types.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Framework {
+    /// Next.js framework
+    Nextjs,
+    /// SvelteKit framework
+    Sveltekit,
+    /// Nuxt.js framework
+    Nuxt,
+    /// Astro framework
+    Astro,
+    /// Remix framework
+    Remix,
+    /// Vite framework
+    Vite,
+    /// Static HTML
+    Static,
+}
+
+impl Framework {
+    /// Get the default output directory for this framework.
+    pub fn default_output_dir(&self) -> &'static str {
+        match self {
+            Framework::Nextjs => "out",
+            Framework::Sveltekit => "build",
+            Framework::Nuxt => "dist",
+            Framework::Astro => "dist",
+            Framework::Remix => "public/build",
+            Framework::Vite => "dist",
+            Framework::Static => ".",
+        }
+    }
+
+    /// Get the default build command for this framework.
+    pub fn default_build_cmd(&self) -> &'static str {
+        match self {
+            Framework::Nextjs => "npm run build",
+            Framework::Sveltekit => "npm run build",
+            Framework::Nuxt => "npm run build",
+            Framework::Astro => "npm run build",
+            Framework::Remix => "npm run build",
+            Framework::Vite => "npm run build",
+            Framework::Static => "echo 'No build needed'",
+        }
+    }
+}
+
+/// Backend runtime environments.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Runtime {
+    /// Rust runtime
+    Rust,
+    /// Node.js runtime
+    Node,
+    /// Python runtime
+    Python,
+    /// Go runtime
+    Go,
+    /// Java runtime
+    Java,
+    /// Ruby runtime
+    Ruby,
+    /// PHP runtime
+    Php,
+    /// Docker container
+    Docker,
+}
+
+impl Runtime {
+    /// Get the default base image suggestion for this runtime.
+    pub fn default_dockerfile_hint(&self) -> &'static str {
+        match self {
+            Runtime::Rust => "rust:1-alpine",
+            Runtime::Node => "node:20-alpine",
+            Runtime::Python => "python:3.11-alpine",
+            Runtime::Go => "golang:1.21-alpine",
+            Runtime::Java => "eclipse-temurin:17-jre-alpine",
+            Runtime::Ruby => "ruby:3.2-alpine",
+            Runtime::Php => "php:8.2-alpine",
+            Runtime::Docker => "Specify your own base image",
+        }
+    }
+}
+
+/// Database engine types.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DatabaseEngine {
+    /// PostgreSQL database
+    Postgres,
+    /// MySQL database (parsed but unsupported)
+    Mysql,
+    /// Redis (parsed but unsupported)
+    Redis,
+}
+
+/// Backup schedule frequency.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum BackupSchedule {
+    /// Hourly backups
+    Hourly,
+    /// Daily backups
+    Daily,
+    /// Weekly backups
+    Weekly,
+}
+
+/// Authentication provider types.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AuthProviderKind {
+    /// Email/password authentication
+    Email,
+    /// Google OAuth
+    Google,
+    /// GitHub OAuth
+    Github,
+    /// Apple OAuth
+    Apple,
+    /// Discord OAuth
+    Discord,
+    /// Slack OAuth
+    Slack,
+}
+
 /// A complete deployment specification.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DeploySpec {
