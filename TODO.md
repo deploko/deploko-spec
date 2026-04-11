@@ -97,15 +97,15 @@ Parser and validator crate for the Deploko `deploko.toml` spec.
   - [x] `Serialize`: round-trip as string
 
 ### 1.3 Secret Types (`src/schema.rs`)
-- [ ] Implement `SecretRef(String)` newtype
-  - [ ] `Deserialize`: parse `${secrets.KEY}` → extract `KEY`
-  - [ ] Error if pattern does not match `^\$\{secrets\.[A-Z][A-Z0-9_]{0,63}\}$`
-  - [ ] `Display`: render as `${secrets.KEY}` (key name visible, never the value)
-- [ ] Implement `EnvValue` enum
-  - [ ] Variant `Literal(String)`
-  - [ ] Variant `Secret(SecretRef)`
-  - [ ] `Deserialize`: detect `${secrets.*}` pattern → `Secret`, else `Literal`
-  - [ ] `Display`: `Literal` → raw value; `Secret` → `[secret:KEY]` (never expose value)
+- [x] Implement `SecretRef(String)` newtype
+  - [x] `Deserialize`: parse `${secrets.KEY}` → extract `KEY`
+  - [x] Error if pattern does not match `^\$\{secrets\.[A-Z][A-Z0-9_]{0,63}\}$`
+  - [x] `Display`: render as `${secrets.KEY}` (key name visible, never the value)
+- [x] Implement `EnvValue` enum
+  - [x] Variant `Literal(String)`
+  - [x] Variant `Secret(SecretRef)`
+  - [x] `Deserialize`: detect `${secrets.*}` pattern → `Secret`, else `Literal`
+  - [x] `Display`: `Literal` → raw value; `Secret` → `[secret:KEY]` (never expose value)
 
 ### 1.4 Enums (`src/schema.rs`)
 - [ ] `Region` enum

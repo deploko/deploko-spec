@@ -53,4 +53,4 @@ gcov/
 
 # Added by cargo
 
-/target
+.skill/

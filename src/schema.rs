@@ -229,6 +229,182 @@ impl Serialize for Duration {
     }
 }
 
+/// A newtype wrapper for secret references.
+///
+/// Parses strings like `${secrets.KEY}` where KEY must match the pattern
+/// `^[A-Z][A-Z0-9_]{0,63}$` (starts with uppercase letter, followed by
+/// uppercase letters, digits, or underscores, max 64 characters).
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct SecretRef(String);
+
+impl SecretRef {
+    /// Get the secret key name.
+    pub fn key(&self) -> &str {
+        &self.0
+    }
+
+    /// Create a new SecretRef from a key string.
+    ///
+    /// Returns an error if the key doesn't match the required pattern.
+    pub fn new(key: impl Into<String>) -> Result<Self, String> {
+        let key = key.into();
+        if Self::is_valid_key(&key) {
+            Ok(Self(key))
+        } else {
+            Err(format!(
+                "Invalid secret key '{}'. Must match pattern: ^[A-Z][A-Z0-9_]{{0,63}}$",
+                key
+            ))
+        }
+    }
+
+    /// Validate that a key matches the required pattern.
+    fn is_valid_key(key: &str) -> bool {
+        if key.is_empty() || key.len() > 64 {
+            return false;
+        }
+        let mut chars = key.chars();
+        let first = chars.next().unwrap();
+        if !first.is_ascii_uppercase() {
+            return false;
+        }
+        chars.all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
+    }
+}
+
+impl fmt::Display for SecretRef {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "${{secrets.{}}}", self.0)
+    }
+}
+
+impl FromStr for SecretRef {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let trimmed = s.trim();
+
+        // Check if it starts with ${secrets. and ends with }
+        let prefix = "${secrets.";
+        let suffix = "}";
+
+        if !trimmed.starts_with(prefix) || !trimmed.ends_with(suffix) {
+            return Err(format!(
+                "Invalid secret reference format '{}'. Expected format: ${{secrets.KEY}}",
+                s
+            ));
+        }
+
+        // Extract the key between prefix and suffix
+        let key_start = prefix.len();
+        let key_end = trimmed.len() - suffix.len();
+        let key = &trimmed[key_start..key_end];
+
+        if key.is_empty() {
+            return Err("Secret key cannot be empty".to_string());
+        }
+
+        Self::new(key)
+    }
+}
+
+impl<'de> Deserialize<'de> for SecretRef {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        SecretRef::from_str(&s).map_err(serde::de::Error::custom)
+    }
+}
+
+impl Serialize for SecretRef {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+/// An environment variable value that can be either a literal string or a secret reference.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EnvValue {
+    /// A literal string value.
+    Literal(String),
+    /// A reference to a secret.
+    Secret(SecretRef),
+}
+
+impl EnvValue {
+    /// Get the literal value if it exists.
+    pub fn as_literal(&self) -> Option<&str> {
+        match self {
+            EnvValue::Literal(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Get the secret reference if it exists.
+    pub fn as_secret(&self) -> Option<&SecretRef> {
+        match self {
+            EnvValue::Secret(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Check if this is a secret reference.
+    pub fn is_secret(&self) -> bool {
+        matches!(self, EnvValue::Secret(_))
+    }
+
+    /// Check if this is a literal value.
+    pub fn is_literal(&self) -> bool {
+        matches!(self, EnvValue::Literal(_))
+    }
+}
+
+impl fmt::Display for EnvValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            EnvValue::Literal(s) => write!(f, "{}", s),
+            EnvValue::Secret(secret_ref) => write!(f, "[secret:{}]", secret_ref.key()),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for EnvValue {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        let trimmed = s.trim();
+
+        // Check if it looks like a secret reference
+        if trimmed.starts_with("${secrets.") && trimmed.ends_with("}") {
+            match SecretRef::from_str(trimmed) {
+                Ok(secret_ref) => Ok(EnvValue::Secret(secret_ref)),
+                Err(e) => Err(serde::de::Error::custom(e)),
+            }
+        } else {
+            Ok(EnvValue::Literal(s))
+        }
+    }
+}
+
+impl Serialize for EnvValue {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            EnvValue::Literal(s) => serializer.serialize_str(s),
+            EnvValue::Secret(secret_ref) => serializer.serialize_str(&secret_ref.to_string()),
+        }
+    }
+}
+
 /// A complete deployment specification.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DeploySpec {
@@ -752,5 +928,140 @@ mod tests {
             );
             assert_eq!(result.unwrap().bytes(), expected, "Mismatch for: {}", input);
         }
+    }
+
+    #[test]
+    fn test_secret_ref_parse_valid() {
+        let test_cases = vec![
+            ("${secrets.API_KEY}", "API_KEY"),
+            ("${secrets.DB_PASSWORD}", "DB_PASSWORD"),
+            ("${secrets.MY_SECRET_123}", "MY_SECRET_123"),
+            ("  ${secrets.TRIMMED}  ", "TRIMMED"), // whitespace is trimmed
+        ];
+
+        for (input, expected_key) in test_cases {
+            let result = SecretRef::from_str(input);
+            assert!(result.is_ok(), "Failed to parse: {}", input);
+            assert_eq!(
+                result.unwrap().key(),
+                expected_key,
+                "Mismatch for: {}",
+                input
+            );
+        }
+    }
+
+    #[test]
+    fn test_secret_ref_parse_invalid() {
+        let invalid_cases = vec![
+            "${secrets.}",          // empty key
+            "${secrets.lowercase}", // lowercase
+            "${secrets.123KEY}",    // starts with digit
+            "${secrets.KEY!}",      // invalid character
+            "${secrets.A0123456789012345678901234567890123456789012345678901234567890123}", // too long (65 chars)
+            "secrets.KEY",   // missing ${ and }
+            "${secrets.KEY", // missing closing }
+            "secrets.KEY}",  // missing opening ${
+            "${other.KEY}",  // wrong prefix
+            "${secret.KEY}", // singular secret
+            "",              // empty string
+            "plain_value",   // not a reference
+        ];
+
+        for input in invalid_cases {
+            let result = SecretRef::from_str(input);
+            assert!(result.is_err(), "Should have failed to parse: {}", input);
+        }
+    }
+
+    #[test]
+    fn test_secret_ref_display() {
+        let secret_ref = SecretRef::new("MY_KEY").unwrap();
+        assert_eq!(secret_ref.to_string(), "${secrets.MY_KEY}");
+    }
+
+    #[test]
+    fn test_secret_ref_serialize_deserialize() {
+        let original = SecretRef::new("API_KEY").unwrap();
+        let serialized = serde_json::to_string(&original).unwrap();
+        assert_eq!(serialized, "\"${secrets.API_KEY}\"");
+
+        let deserialized: SecretRef = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(original, deserialized);
+        assert_eq!(deserialized.key(), "API_KEY");
+    }
+
+    #[test]
+    fn test_secret_ref_key_length_boundary() {
+        // 1 character key (valid)
+        assert!(SecretRef::new("A").is_ok());
+
+        // 64 character key (valid - max length)
+        let max_key = "A".to_string() + &"B".repeat(63);
+        assert_eq!(max_key.len(), 64);
+        assert!(SecretRef::new(&max_key).is_ok());
+
+        // 65 character key (invalid - too long)
+        let too_long = "A".to_string() + &"B".repeat(64);
+        assert_eq!(too_long.len(), 65);
+        assert!(SecretRef::new(&too_long).is_err());
+    }
+
+    #[test]
+    fn test_env_value_literal() {
+        // Test deserializing a literal value
+        let json = "\"plain_value\"";
+        let env_value: EnvValue = serde_json::from_str(json).unwrap();
+        assert!(env_value.is_literal());
+        assert!(!env_value.is_secret());
+        assert_eq!(env_value.as_literal(), Some("plain_value"));
+        assert_eq!(env_value.as_secret(), None);
+        assert_eq!(env_value.to_string(), "plain_value");
+    }
+
+    #[test]
+    fn test_env_value_secret() {
+        // Test deserializing a secret reference
+        let json = "\"${secrets.DB_PASSWORD}\"";
+        let env_value: EnvValue = serde_json::from_str(json).unwrap();
+        assert!(!env_value.is_literal());
+        assert!(env_value.is_secret());
+        assert_eq!(env_value.as_literal(), None);
+        assert!(env_value.as_secret().is_some());
+        assert_eq!(env_value.to_string(), "[secret:DB_PASSWORD]");
+    }
+
+    #[test]
+    fn test_env_value_serialize_roundtrip() {
+        // Literal roundtrip
+        let literal = EnvValue::Literal("my_value".to_string());
+        let serialized = serde_json::to_string(&literal).unwrap();
+        assert_eq!(serialized, "\"my_value\"");
+        let deserialized: EnvValue = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(literal, deserialized);
+
+        // Secret roundtrip
+        let secret = EnvValue::Secret(SecretRef::new("API_KEY").unwrap());
+        let serialized = serde_json::to_string(&secret).unwrap();
+        assert_eq!(serialized, "\"${secrets.API_KEY}\"");
+        let deserialized: EnvValue = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(secret, deserialized);
+    }
+
+    #[test]
+    fn test_env_value_display() {
+        let literal = EnvValue::Literal("visible_value".to_string());
+        assert_eq!(literal.to_string(), "visible_value");
+
+        let secret = EnvValue::Secret(SecretRef::new("HIDDEN_KEY").unwrap());
+        assert_eq!(secret.to_string(), "[secret:HIDDEN_KEY]");
+    }
+
+    #[test]
+    fn test_env_value_invalid_secret() {
+        // Invalid secret pattern should fail during deserialization
+        let json = "\"${secrets.invalid_key}\"";
+        let result: Result<EnvValue, _> = serde_json::from_str(json);
+        assert!(result.is_err());
     }
 }
