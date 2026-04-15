@@ -149,25 +149,25 @@ Parser and validator crate for the Deploko `deploko.toml` spec.
 **Milestone:** `v0.1.0`
 
 ### 2.1 TOML Parser (`src/parser.rs`)
-- [ ] `pub fn parse_toml(input: &str) -> Result<DeploySpec, ParseError>`
-  - [ ] `toml::from_str::<DeploySpec>(input)`
-  - [ ] Map `toml::de::Error` → `ParseError::Toml { line, col, message }`
+- [x] `pub fn parse_toml(input: &str) -> Result<DeploySpec, ParseError>`
+  - [x] `toml::from_str::<DeploySpec>(input)`
+  - [x] Map `toml::de::Error` → `ParseError::Toml { line, col, message }`
 
 
 ### 2.3 File Helpers (`src/parser.rs`)
-- [ ] `pub fn parse_file(path: &Path) -> Result<DeploySpec, ParseError>`
-  - [ ] Read file → map IO error to `ParseError::Io`
-  - [ ] Error `ParseError::UnknownFormat` if extension unrecognized
-- [ ] `pub fn parse_auto(dir: &Path) -> Result<DeploySpec, ParseError>`
-  - [ ] Look for `deploko.toml` in the given directory
-  - [ ] Error `ParseError::NoSpecFile { searched_dir }` if not found
+- [x] `pub fn parse_file(path: &Path) -> Result<DeploySpec, ParseError>`
+  - [x] Read file → map IO error to `ParseError::Io`
+  - [x] Error `ParseError::UnknownFormat` if extension unrecognized
+- [x] `pub fn parse_auto(dir: &Path) -> Result<DeploySpec, ParseError>`
+  - [x] Look for `deploko.toml` in the given directory
+  - [x] Error `ParseError::NoSpecFile { searched_dir }` if not found
 
 ### 2.4 Error Types (`src/error.rs`)
-- [ ] `ParseError` enum with `thiserror::Error`
-  - [ ] `Toml { line: Option<usize>, col: Option<usize>, message: String }`
-  - [ ] `Io { path: PathBuf, #[source] source: std::io::Error }`
-  - [ ] `UnknownFormat { extension: String }`
-  - [ ] `NoSpecFile { searched_dir: PathBuf }`
+- [x] `ParseError` enum with `thiserror::Error`
+  - [x] `Toml { line: Option<usize>, col: Option<usize>, message: String }`
+  - [x] `Io { path: PathBuf, #[source] source: std::io::Error }`
+  - [x] `UnknownFormat { extension: String }`
+  - [x] `NoSpecFile { searched_dir: PathBuf }`
 
 ---
 

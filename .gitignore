@@ -54,3 +54,5 @@ gcov/
 # Added by cargo
 
 .skill/
+.cursor/rules/skill-context.md
+.windsurf/rules/skill-context.md

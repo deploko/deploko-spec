@@ -32,14 +32,30 @@ pub mod validator;
 
 // Re-export main types for convenience
 pub use compiled::CompiledSpec;
-pub use error::{Error, Result};
-pub use parser::parse_str;
+pub use error::{Error, ParseError, Result};
+pub use parser::{parse_file, parse_str, parse_toml};
 pub use schema::DeploySpec;
 pub use validator::ValidationReport;
 
-/// Parse a deploko.toml file from the given path.
-pub fn parse_auto(path: &std::path::Path) -> Result<schema::DeploySpec> {
-    parser::parse_file(path)
+/// Parse a deploko.toml file from the given directory.
+///
+/// Looks for `deploko.toml` in the given directory.
+/// Returns `ParseError::NoSpecFile` if the file does not exist.
+/// Returns `ParseError::Io` if the file cannot be read.
+/// Returns `ParseError::Toml` if the file content is invalid TOML.
+pub fn parse_auto(dir: &std::path::Path) -> std::result::Result<schema::DeploySpec, ParseError> {
+    let path = dir.join("deploko.toml");
+    // Let parse_file handle the IO error naturally; avoids TOCTOU race
+    match parser::parse_file(&path) {
+        Err(ParseError::Io { path: _, source })
+            if source.kind() == std::io::ErrorKind::NotFound =>
+        {
+            Err(ParseError::NoSpecFile {
+                searched_dir: dir.to_path_buf(),
+            })
+        }
+        other => other,
+    }
 }
 
 /// Validate a deployment specification.

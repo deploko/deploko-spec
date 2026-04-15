@@ -4,9 +4,50 @@
 //! parsing, validation, and compilation operations.
 
 use std::fmt;
+use std::path::PathBuf;
+use std::sync::Arc;
 
 /// Result type alias for the crate.
 pub type Result<T> = std::result::Result<T, Error>;
+
+/// Parse error type with structured error information.
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum ParseError {
+    /// TOML parsing error with location information.
+    #[error("TOML parse error at line {line:?}, column {col:?}: {message}")]
+    Toml {
+        /// Line number where the error occurred (1-indexed).
+        line: Option<usize>,
+        /// Column number where the error occurred (1-indexed).
+        col: Option<usize>,
+        /// Error message.
+        message: String,
+    },
+
+    /// I/O error while reading a file.
+    #[error("I/O error reading {path}: {source}")]
+    Io {
+        /// Path to the file that caused the error.
+        path: PathBuf,
+        /// Source I/O error (wrapped in Arc for Clone impl).
+        #[source]
+        source: Arc<std::io::Error>,
+    },
+
+    /// Unknown file format based on extension.
+    #[error("Unknown file format: {extension}")]
+    UnknownFormat {
+        /// File extension that was not recognized.
+        extension: String,
+    },
+
+    /// Spec file not found in directory.
+    #[error("No spec file found in directory: {searched_dir}")]
+    NoSpecFile {
+        /// Directory that was searched.
+        searched_dir: PathBuf,
+    },
+}
 
 /// Main error type for the deploko-spec crate.
 #[derive(Debug, Clone)]
@@ -213,5 +254,24 @@ mod tests {
             }
             _ => panic!("Expected Generic error"),
         }
+    }
+
+    #[test]
+    fn test_parse_error_clone() {
+        // Verify ParseError implements Clone
+        let error = ParseError::Toml {
+            line: Some(10),
+            col: Some(5),
+            message: "test error".to_string(),
+        };
+        let cloned = error.clone();
+        assert_eq!(error.to_string(), cloned.to_string());
+
+        let io_error = ParseError::Io {
+            path: PathBuf::from("/test/path"),
+            source: Arc::new(std::io::Error::new(std::io::ErrorKind::NotFound, "test")),
+        };
+        let io_cloned = io_error.clone();
+        assert_eq!(io_error.to_string(), io_cloned.to_string());
     }
 }
