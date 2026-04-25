@@ -41,10 +41,10 @@ pub enum ParseError {
         extension: String,
     },
 
-    /// Spec file not found in directory.
-    #[error("No spec file found in directory: {searched_dir}")]
+    /// Spec file not found in directory or its parents.
+    #[error("No spec file found in {searched_dir} or any parent directory")]
     NoSpecFile {
-        /// Directory that was searched.
+        /// Starting directory that was searched (parent directories also searched).
         searched_dir: PathBuf,
     },
 }

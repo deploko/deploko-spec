@@ -264,7 +264,9 @@ impl SecretRef {
             return false;
         }
         let mut chars = key.chars();
-        let first = chars.next().unwrap();
+        let Some(first) = chars.next() else {
+            return false;
+        };
         if !first.is_ascii_uppercase() {
             return false;
         }

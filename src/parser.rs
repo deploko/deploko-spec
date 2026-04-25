@@ -76,9 +76,8 @@ pub fn parse_str(content: &str) -> Result<DeploySpec, ParseError> {
 ///
 /// # Errors
 ///
-/// Returns `ParseError::NoSpecFile` if no deploko.toml is found in any
-/// searched directory. Note: only the starting directory is reported in
-/// the error; parent directories are also searched but not listed.
+/// Returns `ParseError::NoSpecFile` if no deploko.toml is found in the
+/// starting directory or any of its parent directories.
 /// Returns `ParseError::Io` if the file cannot be read.
 /// Returns `ParseError::Toml` if the file content is invalid TOML.
 pub fn find_and_parse(start_dir: &Path) -> Result<DeploySpec, ParseError> {
@@ -86,8 +85,14 @@ pub fn find_and_parse(start_dir: &Path) -> Result<DeploySpec, ParseError> {
 
     loop {
         let config_path = current_dir.join("deploko.toml");
-        if config_path.exists() {
-            return parse_file(&config_path);
+        match parse_file(&config_path) {
+            Ok(spec) => return Ok(spec),
+            Err(ParseError::Io { path: _, source })
+                if source.kind() == std::io::ErrorKind::NotFound =>
+            {
+                // File doesn't exist in this directory, try parent
+            }
+            Err(other) => return Err(other),
         }
 
         // Move to parent directory
