@@ -69,7 +69,7 @@ jobs:
     - name: Generate SBOM
       run: cargo cyclonedx
     - name: Upload SBOM artifact
-      uses: actions/upload-artifact@v4.3.3
+      uses: actions/upload-artifact@v7.0.1
       with:
         name: sbom-${{ needs.validate-tag.outputs.version }}
         path: bom.json
